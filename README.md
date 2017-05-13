@@ -5,7 +5,7 @@ It to expose your files from a given directory, simply and nicely.
 ## Building
 
 ```
-go build --o bin/sakuin
+go build -o bin/sakuin
 ```
 
 ## Usage
@@ -21,6 +21,6 @@ Usage of sakuin:
 ## Building Docker image
 
 ```
-GOOS=linux go build --o bin/sakuin
+GOOS=linux go build -o bin/sakuin
 docker build .
 ```
