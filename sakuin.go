@@ -34,8 +34,8 @@ type breadcrumb struct {
 var dataDir string
 
 func main() {
-	dirArg := flag.String("dir", ".", "Path to data dir you want to expose")
-	portArg := flag.Int("port", 3000, "Port binded by Sakuin")
+	dirArg := flag.String("dir", ".", "Path to data dir exposed")
+	portArg := flag.Int("port", 3000, "Port bound by Sakuin")
 	flag.Parse()
 
 	port := fmt.Sprintf(":%d", *portArg)
