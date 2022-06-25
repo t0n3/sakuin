@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <title>Sakuin (索引)</title>
-        <link rel="stylesheet" href="assets/css/theme.css">
+        <link rel="stylesheet" href="/assets/css/theme.css">
     </head>
     <body>
 
@@ -17,8 +17,9 @@
 
             <ul class="uk-breadcrumb">
                 <li><a href="/">Home</a></li>
-                <li><a href="/test">test</a></li>
-                <li><span>Current</span></li>
+                {{ range $index, $element := .Path }}
+                <li><a href="{{ $element.Path }}">{{ $element.Name }}</a></li>
+                {{ end }}
             </ul>
 
             <table class="uk-table uk-table-striped uk-table-hover uk-table-middle">
@@ -31,29 +32,26 @@
                     </tr>
                 </thead>
                 <tbody>
+                    {{ range .Files }}
                     <tr>
-                        <td class="uk-text-truncate">Table Data</td>
-                        <td class="uk-text-nowrap">Table Data</td>
-                        <td class="uk-text-nowrap">Table Data</td>
-                        <td class="uk-text-nowrap"><a href="" class="uk-icon-button" uk-icon="icon: cloud-download"></a></td>
+                        <td class="uk-text-truncate">
+                            <span uk-icon="icon: {{ if .IsDir }}folder{{ else }}file{{ end }}"></span>
+                            {{ if .IsDir }}
+                                <a href="{{ .Path }}">{{ .Name }}</a>
+                            {{ else }}
+                                {{ .Name }}
+                            {{ end }}
+                        </td>
+                        <td class="uk-text-nowrap">{{ .Date }}</td>
+                        <td class="uk-text-nowrap">{{ if .IsDir }} - {{ else }}{{ .Size }}{{ end }}</td>
+                        <td class="uk-text-nowrap">{{ if .IsDir }} - {{ else }}<a href="{{ .Path }}" class="uk-icon-button" uk-icon="icon: cloud-download"></a>{{ end }}</td>
                     </tr>
-                    <tr>
-                        <td class="uk-text-truncate">Table Data</td>
-                        <td class="uk-text-nowrap">Table Data</td>
-                        <td class="uk-text-nowrap">Table Data</td>
-                        <td class="uk-text-nowrap"><a href="" class="uk-icon-button" uk-icon="icon: cloud-download"></a></td>
-                    </tr>
-                    <tr>
-                        <td class="uk-text-truncate">Table Data</td>
-                        <td class="uk-text-nowrap">Table Data</td>
-                        <td class="uk-text-nowrap">Table Data</td>
-                        <td class="uk-text-nowrap"><a href="" class="uk-icon-button" uk-icon="icon: cloud-download"></a></td>
-                    </tr>
+                    {{ end }}
                 </tbody>
             </table>
             
         </div>
 
-        <script src="assets/bundle.js"></script>
+        <script src="/assets/bundle.js"></script>
     </body>
 </html>
