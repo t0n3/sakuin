@@ -3,18 +3,57 @@
     <head>
         <meta charset="utf-8">
         <title>Sakuin (索引)</title>
-        <link rel="stylesheet" href="dist/css/theme.css">
+        <link rel="stylesheet" href="assets/css/theme.css">
     </head>
     <body>
 
-        <div class="uk-container">
-            <div class="uk-card uk-card-body uk-card-primary">
-                <h3 class="uk-card-title">Example headline</h3>
-
-                <button class="uk-button uk-button-default" uk-tooltip="title: Hello World">Hover</button>
+        <nav class="uk-navbar-container uk-margin" uk-navbar>
+            <div class="uk-navbar-center">
+                <a class="uk-navbar-item uk-logo" href="#">Sakuin (索引)</a>
             </div>
+        </nav>
+
+        <div class="uk-container">
+
+            <ul class="uk-breadcrumb">
+                <li><a href="/">Home</a></li>
+                <li><a href="/test">test</a></li>
+                <li><span>Current</span></li>
+            </ul>
+
+            <table class="uk-table uk-table-striped uk-table-hover uk-table-middle">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th class="uk-table-shrink uk-text-nowrap">Last Modified</th>
+                        <th class="uk-table-shrink uk-text-nowrap">Size</th>
+                        <th class="uk-table-shrink uk-text-nowrap">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="uk-text-truncate">Table Data</td>
+                        <td class="uk-text-nowrap">Table Data</td>
+                        <td class="uk-text-nowrap">Table Data</td>
+                        <td class="uk-text-nowrap"><a href="" class="uk-icon-button" uk-icon="icon: cloud-download"></a></td>
+                    </tr>
+                    <tr>
+                        <td class="uk-text-truncate">Table Data</td>
+                        <td class="uk-text-nowrap">Table Data</td>
+                        <td class="uk-text-nowrap">Table Data</td>
+                        <td class="uk-text-nowrap"><a href="" class="uk-icon-button" uk-icon="icon: cloud-download"></a></td>
+                    </tr>
+                    <tr>
+                        <td class="uk-text-truncate">Table Data</td>
+                        <td class="uk-text-nowrap">Table Data</td>
+                        <td class="uk-text-nowrap">Table Data</td>
+                        <td class="uk-text-nowrap"><a href="" class="uk-icon-button" uk-icon="icon: cloud-download"></a></td>
+                    </tr>
+                </tbody>
+            </table>
+            
         </div>
 
-        <script src="dist/bundle.js"></script>
+        <script src="assets/bundle.js"></script>
     </body>
 </html>
