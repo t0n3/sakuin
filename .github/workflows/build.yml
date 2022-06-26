@@ -25,15 +25,18 @@ jobs:
     - uses: actions/setup-node@v3
       with:
         node-version: lts/*
+      working-directory: ./web
     
     - name: Setup yarn
       run: npm install -g yarn
+      working-directory: ./web
     
     - name: Setup Nodejs with yarn caching
       uses: actions/setup-node@v2
       with:
         node-version: "14"
         cache: yarn
+      working-directory: ./web
 
     - name: Install dependencies
       run: yarn install
