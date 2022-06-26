@@ -5,7 +5,11 @@ It exposes your files from a given directory, simply and nicely.
 ## Building
 
 ```
-go build -o build/sakuin
+cd web/
+yarn install && yarn compile
+cd ../
+go get -v ./...
+go build -v ./...
 ```
 
 ## Usage
@@ -28,6 +32,6 @@ Flags:
 ## Building Docker image
 
 ```
-GOOS=linux go build -o build/sakuin
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v ./...
 docker build .
 ```

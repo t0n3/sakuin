@@ -64,28 +64,30 @@ var serveCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(serveCmd)
-	serveCmd.Flags().StringP("data-dir", "d", "", "Directory containing data that Sakuin will serve")
+	serveCmd.Flags().StringP("data", "d", "", "Directory containing data that Sakuin will serve")
 	serveCmd.Flags().IntP("port", "p", 3000, "Port to listen to")
-	serveCmd.Flags().String("listen-addr", "0.0.0.0", "Address to listen to")
+	serveCmd.Flags().String("listen", "0.0.0.0", "Address to listen to")
 
-	viper.BindPFlag("data-dir", serveCmd.Flags().Lookup("data-dir"))
+	viper.BindPFlag("data", serveCmd.Flags().Lookup("data"))
 	viper.BindPFlag("port", serveCmd.Flags().Lookup("port"))
-	viper.BindPFlag("listen-addr", serveCmd.Flags().Lookup("listen-addr"))
+	viper.BindPFlag("listen", serveCmd.Flags().Lookup("listen"))
 }
 
 func serve(cmd *cobra.Command, args []string) {
-	dataDir = viper.GetString("data-dir")
+	dataDir = viper.GetString("data")
 
 	if dataDir == "" {
-		log.Fatal().Err(errors.New("please specify a data directory, can't be empty"))
+		log.Fatal().Err(errors.New("please specify a data directory, can't be empty")).Msg("")
 	}
 
 	_, err := os.Stat(dataDir)
 	if err != nil {
 		if os.IsNotExist(err) {
-			log.Fatal().Err(errors.New("please specify a valid data directory"))
+			log.Fatal().Err(errors.New("please specify a valid data directory")).Msg("")
 		}
 	}
+
+	log.Info().Msgf("Sakuin will serve this directory: %s", dataDir)
 
 	middleware := alice.New()
 
@@ -112,7 +114,7 @@ func serve(cmd *cobra.Command, args []string) {
 	assetsHandler := middleware.Then(web.AssetsHandler("/assets/", "dist"))
 
 	port := viper.GetInt("port")
-	address := viper.GetString("listen-addr")
+	address := viper.GetString("listen")
 
 	mux := http.NewServeMux()
 	mux.Handle("/assets/", assetsHandler)
