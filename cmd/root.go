@@ -17,20 +17,22 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 package cmd
 
 import (
-	"fmt"
 	"os"
 
+	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
 var cfgFile string
 
+var log zerolog.Logger
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "sakuin",
 	Short: "Simple but effective fileserver",
-	Long: `An HTTP fileserver in golang with a simple WebUI`,
+	Long:  `An HTTP fileserver in golang with a simple WebUI`,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -45,15 +47,14 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.sakuin.yaml)")
 
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	host, _ := os.Hostname()
+	log = zerolog.New(os.Stdout).With().
+		Timestamp().
+		Str("role", "sakuin").
+		Str("host", host).
+		Logger()
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -72,10 +73,11 @@ func initConfig() {
 		viper.SetConfigName(".sakuin")
 	}
 
+	viper.SetEnvPrefix("sakuin")
 	viper.AutomaticEnv() // read in environment variables that match
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
-		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
+		log.Info().Msgf("Using config file: %s", viper.ConfigFileUsed())
 	}
 }

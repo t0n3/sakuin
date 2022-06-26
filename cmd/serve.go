@@ -17,16 +17,19 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"html/template"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/dustin/go-humanize"
+	"github.com/justinas/alice"
+	"github.com/rs/zerolog/hlog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/t0n3/sakuin/web"
@@ -56,30 +59,7 @@ var dataDir string
 var serveCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "Start the HTTP server",
-	Run: func(cmd *cobra.Command, args []string) {
-		dataDir = viper.GetString("data-dir")
-
-		if dataDir == "" {
-			log.Fatalln("Error: please specify a data directory, can't be empty")
-		}
-
-		_, err := os.Stat(dataDir)
-		if err != nil {
-			if os.IsNotExist(err) {
-				log.Fatalln("Error: please specify a valid data directory")
-			}
-		}
-
-		port := viper.GetInt("port")
-		address := viper.GetString("listen-addr")
-
-		mux := http.NewServeMux()
-		mux.Handle("/assets/", web.AssetsHandler("/assets/", "dist"))
-		mux.HandleFunc("/", serve)
-
-		log.Printf("Starting Sakuin HTTP Server on %s:%d\n", address, port)
-		http.ListenAndServe(fmt.Sprintf("%s:%d", address, port), mux)
-	},
+	Run:   serve,
 }
 
 func init() {
@@ -93,7 +73,56 @@ func init() {
 	viper.BindPFlag("listen-addr", serveCmd.Flags().Lookup("listen-addr"))
 }
 
-func serve(w http.ResponseWriter, r *http.Request) {
+func serve(cmd *cobra.Command, args []string) {
+	dataDir = viper.GetString("data-dir")
+
+	if dataDir == "" {
+		log.Fatal().Err(errors.New("please specify a data directory, can't be empty"))
+	}
+
+	_, err := os.Stat(dataDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			log.Fatal().Err(errors.New("please specify a valid data directory"))
+		}
+	}
+
+	middleware := alice.New()
+
+	// Install the logger handler with default output on the console
+	middleware = middleware.Append(hlog.NewHandler(log))
+
+	// Install some provided extra handler to set some request's context fields.
+	// Thanks to that handler, all our logs will come with some prepopulated fields.
+	middleware = middleware.Append(hlog.AccessHandler(func(r *http.Request, status, size int, duration time.Duration) {
+		hlog.FromRequest(r).Info().
+			Str("method", r.Method).
+			Stringer("url", r.URL).
+			Int("status", status).
+			Int("size", size).
+			Dur("duration", duration).
+			Msg("")
+	}))
+	middleware = middleware.Append(hlog.RemoteAddrHandler("ip"))
+	middleware = middleware.Append(hlog.UserAgentHandler("user_agent"))
+	middleware = middleware.Append(hlog.RefererHandler("referer"))
+	middleware = middleware.Append(hlog.RequestIDHandler("req_id", "Request-Id"))
+
+	handler := middleware.Then(http.HandlerFunc(serverHandler))
+	assetsHandler := middleware.Then(web.AssetsHandler("/assets/", "dist"))
+
+	port := viper.GetInt("port")
+	address := viper.GetString("listen-addr")
+
+	mux := http.NewServeMux()
+	mux.Handle("/assets/", assetsHandler)
+	mux.Handle("/", handler)
+
+	log.Info().Msgf("Starting Sakuin HTTP Server on %s:%d", address, port)
+	http.ListenAndServe(fmt.Sprintf("%s:%d", address, port), mux)
+}
+
+func serverHandler(w http.ResponseWriter, r *http.Request) {
 	// Filepath, from the root data dir
 	fp := filepath.Join(dataDir, filepath.Clean(r.URL.Path))
 	// Cleaned filepath, without the root data dir, used for template rendering purpose
@@ -106,7 +135,6 @@ func serve(w http.ResponseWriter, r *http.Request) {
 			notFound, _ := template.ParseFS(web.NotFound, "404.html")
 			w.WriteHeader(http.StatusNotFound)
 			notFound.ExecuteTemplate(w, "404.html", nil)
-			log.Printf("404 - %s\n", cfp)
 			return
 		}
 	}
@@ -115,7 +143,7 @@ func serve(w http.ResponseWriter, r *http.Request) {
 	if info.IsDir() {
 		files, err := ioutil.ReadDir(fp)
 		if err != nil {
-			log.Fatal(err)
+			log.Error().Err(err)
 		}
 
 		// Init template variables
@@ -152,7 +180,7 @@ func serve(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFS(web.Index, "index.html")
 		if err != nil {
 			// Log the detailed error
-			log.Println(err.Error())
+			log.Error().Err(err)
 			// Return a generic "Internal Server Error" message
 			http.Error(w, http.StatusText(500), 500)
 			return
@@ -160,10 +188,9 @@ func serve(w http.ResponseWriter, r *http.Request) {
 
 		// Return file listing in the template
 		if err := tmpl.ExecuteTemplate(w, "index.html", templateVars); err != nil {
-			log.Println(err.Error())
+			log.Error().Err(err)
 			http.Error(w, http.StatusText(500), 500)
 		}
-		log.Printf("200 - DIR %s\n", "/")
 		return
 	}
 
@@ -171,7 +198,6 @@ func serve(w http.ResponseWriter, r *http.Request) {
 		content, _ := os.Open(fp)
 		w.Header().Add("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", info.Name()))
 		http.ServeContent(w, r, fp, info.ModTime(), content)
-		log.Printf("200 - FILE %s\n", cfp)
 		return
 	}
 }
