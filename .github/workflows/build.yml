@@ -37,11 +37,11 @@ jobs:
 
     - name: Install dependencies
       run: yarn install
-      workding_directory: ./web
+      working_directory: ./web
 
     - name: Compile JS and CSS
       run: yarn compile
-      workding_directory: ./web
+      working_directory: ./web
 
     - name: Get dependencies
       run: go get -v -t -d ./...
