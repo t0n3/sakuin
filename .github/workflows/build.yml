@@ -41,7 +41,7 @@ jobs:
       run: go get -v -t -d ./...
 
     - name: Build
-      run: GOOS=linux go build -v .
+      run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v .
 
     - name: Login to Docker Hub
       if: ${{ github.event_name == 'push' && github.event.ref == 'refs/heads/master' }}
