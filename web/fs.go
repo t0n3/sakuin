@@ -14,6 +14,9 @@ var assets embed.FS
 //go:embed index.html
 var Index embed.FS
 
+//go:embed 404.html
+var NotFound embed.FS
+
 // fsFunc is short-hand for constructing a http.FileSystem
 // implementation
 type fsFunc func(name string) (fs.File, error)
@@ -34,7 +37,7 @@ func AssetsHandler(prefix, root string) http.Handler {
 		// content
 		f, err := assets.Open(assetPath)
 		if os.IsNotExist(err) {
-			return assets.Open("dist/404.html")
+			return NotFound.Open("404.html")
 		}
 
 		// Otherwise assume this is a legitimate request routed

@@ -1,10 +1,23 @@
 /*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
+Copyright © 2022 Tone
 
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 package cmd
 
 import (
+	"fmt"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -15,6 +28,7 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"github.com/t0n3/sakuin/web"
 )
 
@@ -43,27 +57,40 @@ var serveCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "Start the HTTP server",
 	Run: func(cmd *cobra.Command, args []string) {
-		dataDir = "tests"
-		log.Println("Starting Sakuin HTTP Server")
+		dataDir = viper.GetString("data-dir")
+
+		if dataDir == "" {
+			log.Fatalln("Error: please specify a data directory, can't be empty")
+		}
+
+		_, err := os.Stat(dataDir)
+		if err != nil {
+			if os.IsNotExist(err) {
+				log.Fatalln("Error: please specify a valid data directory")
+			}
+		}
+
+		port := viper.GetInt("port")
+		address := viper.GetString("listen-addr")
+
 		mux := http.NewServeMux()
 		mux.Handle("/assets/", web.AssetsHandler("/assets/", "dist"))
 		mux.HandleFunc("/", serve)
-		http.ListenAndServe(":3000", mux)
+
+		log.Printf("Starting Sakuin HTTP Server on %s:%d\n", address, port)
+		http.ListenAndServe(fmt.Sprintf("%s:%d", address, port), mux)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(serveCmd)
+	serveCmd.Flags().StringP("data-dir", "d", "", "Directory containing data that Sakuin will serve")
+	serveCmd.Flags().IntP("port", "p", 3000, "Port to listen to")
+	serveCmd.Flags().String("listen-addr", "0.0.0.0", "Address to listen to")
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// serveCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// serveCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	viper.BindPFlag("data-dir", serveCmd.Flags().Lookup("data-dir"))
+	viper.BindPFlag("port", serveCmd.Flags().Lookup("port"))
+	viper.BindPFlag("listen-addr", serveCmd.Flags().Lookup("listen-addr"))
 }
 
 func serve(w http.ResponseWriter, r *http.Request) {
@@ -76,7 +103,9 @@ func serve(w http.ResponseWriter, r *http.Request) {
 	info, err := os.Stat(fp)
 	if err != nil {
 		if os.IsNotExist(err) {
-			http.NotFound(w, r)
+			notFound, _ := template.ParseFS(web.NotFound, "404.html")
+			w.WriteHeader(http.StatusNotFound)
+			notFound.ExecuteTemplate(w, "404.html", nil)
 			log.Printf("404 - %s\n", cfp)
 			return
 		}
@@ -139,7 +168,9 @@ func serve(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !info.IsDir() {
-		http.ServeFile(w, r, fp)
+		content, _ := os.Open(fp)
+		w.Header().Add("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", info.Name()))
+		http.ServeContent(w, r, fp, info.ModTime(), content)
 		log.Printf("200 - FILE %s\n", cfp)
 		return
 	}
