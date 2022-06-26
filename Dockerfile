@@ -2,13 +2,13 @@ FROM scratch
 
 LABEL maintainer "tone@t0ne.net"
 
-COPY bin/sakuin /app/
-COPY assets/ /app/assets/
+COPY sakuin /app/
 
 EXPOSE 3000
 VOLUME ["/data"]
 
 WORKDIR /app
 
-ENTRYPOINT ["/app/sakuin"]
-CMD ["-dir","/data"]
+ENV SAKUIN_DATA_DIR="${SAKUIN_DATA_DIR:-/data}"
+
+ENTRYPOINT ["/app/sakuin", "serve"]
