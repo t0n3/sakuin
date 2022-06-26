@@ -169,13 +169,15 @@ func serverHandler(w http.ResponseWriter, r *http.Request) {
 
 		// Establish list of files in the current directory
 		for _, f := range files {
-			templateVars.Files = append(templateVars.Files, fileItem{
-				Name:  f.Name(),
-				Size:  humanize.Bytes(uint64(f.Size())),
-				Date:  humanize.Time(f.ModTime()),
-				IsDir: f.IsDir(),
-				Path:  filepath.Join(cfp, filepath.Clean(f.Name())),
-			})
+			if !strings.HasPrefix(f.Name(), ".") {
+				templateVars.Files = append(templateVars.Files, fileItem{
+					Name:  f.Name(),
+					Size:  humanize.Bytes(uint64(f.Size())),
+					Date:  humanize.Time(f.ModTime()),
+					IsDir: f.IsDir(),
+					Path:  filepath.Join(cfp, filepath.Clean(f.Name())),
+				})
+			}
 		}
 
 		// Prepare the template
